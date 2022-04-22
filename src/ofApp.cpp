@@ -1,16 +1,5 @@
 ﻿#include "ofApp.h"
 
-// fonction qui calcule une interpolation linéaire entre deux valeurs numériques --> Lerp 
-float lerp(float value1, float value2, float t)
-{
-    if (t < 0.0f)
-        return value1;
-
-    if (t > 1.0f)
-        return value2;
-
-    return (1.0f - t) * value1 + t * value2;
-}
 
 //--------------------------------------------------------------
 void ofApp::setup(){
@@ -21,13 +10,17 @@ void ofApp::setup(){
     ofSetSphereResolution(32);
     ofDisableDepthTest();
 
-	// key assignation 
-	is_key_press_up = false;
-	is_key_press_down = false;
-	is_key_press_left = false;
-	is_key_press_right = false;
+    // position de la caméra 
+    cam.setPosition(ofPoint(ofGetWindowWidth() / 2 + 200 , ofGetWindowHeight() / 2, 1500));        
+     
+    ofDisableDepthTest();
 
-    // parameters 
+    is_key_press_up = false;
+    is_key_press_down = false;
+    is_key_press_left = false;
+    is_key_press_right = false;
+
+    // paramètres
     line_resolution = 100;
     line_width_outline = 4.0f;
     line_width_curve = 8.0f;
@@ -39,9 +32,8 @@ void ofApp::setup(){
     // initialisation des sommets de la ligne
     for (index = 0; index <= line_resolution; ++index)
         line_renderer.addVertex(ofPoint());
-
-    // position de la caméra 
-    cam.setPosition(ofPoint(ofGetWindowWidth() / 2 + 300, ofGetWindowHeight() / 2, 1500));
+    for (index_2 = 0; index_2 <= line_resolution; ++index_2)
+        line_renderer_2.addVertex(ofPoint());
 
     // initialisation de la scène
     reset();
@@ -50,109 +42,94 @@ void ofApp::setup(){
 
 //--------------------------------------------------------------
 void ofApp::update(){
-	time_current = ofGetElapsedTimef();
-	time_elapsed = time_current - time_last;
-	time_last = time_current;
+    ctrl_point5 = ctrl_point4;
 
-	if (is_key_press_up)
-		selected_ctrl_point->y -= delta_y * time_elapsed;
-	if (is_key_press_down)
-		selected_ctrl_point->y += delta_y * time_elapsed;
-	if (is_key_press_left)
-		selected_ctrl_point->x -= delta_x * time_elapsed;
-	if (is_key_press_right)
-		selected_ctrl_point->x += delta_x * time_elapsed;
+    time_current = ofGetElapsedTimef();
+    time_elapsed = time_current - time_last;
+    time_last = time_current;
+
+    if (is_key_press_up) selected_ctrl_point->y -= delta_y * time_elapsed;
+    if (is_key_press_down) selected_ctrl_point->y += delta_y * time_elapsed;
+    if (is_key_press_left) selected_ctrl_point->x -= delta_x * time_elapsed;
+    if (is_key_press_right) selected_ctrl_point->x += delta_x * time_elapsed;
+
 
     for (index = 0; index <= line_resolution; ++index) {
-        bezier_quadratic(
+
+        bezier_cubic(
             index / (float)line_resolution,
             ctrl_point1.x, ctrl_point1.y, ctrl_point1.z,
             ctrl_point2.x, ctrl_point2.y, ctrl_point2.z,
             ctrl_point3.x, ctrl_point3.y, ctrl_point3.z,
+            ctrl_point4.x, ctrl_point4.y, ctrl_point4.z,
             position.x, position.y, position.z);
 
-        // affecter la position du point sur la courbe
+        bezier_cubic(
+            index / (float)line_resolution,
+            ctrl_point5.x, ctrl_point5.y, ctrl_point5.z,
+            ctrl_point6.x, ctrl_point6.y, ctrl_point6.z,
+            ctrl_point7.x, ctrl_point7.y, ctrl_point7.z,
+            ctrl_point8.x, ctrl_point8.y, ctrl_point8.z,
+            position_2.x, position_2.y, position_2.z);
+
+
+        // affecter les positions des points sur la courbe
         line_renderer[index] = position;
+        line_renderer_2[index] = position_2;
     }
 }
 
 //--------------------------------------------------------------
 void ofApp::draw(){
 
+    ofSetBackgroundColor(31);
     cam.begin();
     cam.setVFlip(true);
 
-    // dessiner les positions initiales
-    ofSetColor(63, 63, 63);
-    ofDrawEllipse(initial_position1.x, initial_position1.y, radius / 2, radius / 2);
-    ofDrawEllipse(initial_position2.x, initial_position2.y, radius / 2, radius / 2);
-    ofDrawEllipse(initial_position3.x, initial_position3.y, radius / 2, radius / 2);
-    ofDrawEllipse(initial_position4.x, initial_position4.y, radius / 2, radius / 2);
-    ofDrawEllipse(initial_position5.x, initial_position5.y, radius / 2, radius / 2);
+    ofFill();
 
     // dessiner la ligne contour
     ofSetColor(0, 0, 255);
-    ofSetLineWidth(line_width_outline);
-    ofDrawLine(ctrl_point1.x, ctrl_point1.y, ctrl_point2.x, ctrl_point2.y);
-    ofDrawLine(ctrl_point2.x, ctrl_point2.y, ctrl_point3.x, ctrl_point3.y);
-    ofDrawLine(ctrl_point3.x, ctrl_point3.y, ctrl_point4.x, ctrl_point4.y);
-    ofDrawLine(ctrl_point4.x, ctrl_point4.y, ctrl_point1.x, ctrl_point1.y);
+    if (hide_control_line) {
+        ofDrawLine(ctrl_point1.x, ctrl_point1.y, ctrl_point2.x, ctrl_point2.y);
+        ofDrawLine(ctrl_point3.x, ctrl_point3.y, ctrl_point4.x, ctrl_point4.y);
+        ofDrawLine(ctrl_point2.x, ctrl_point2.y, ctrl_point3.x, ctrl_point3.y);
+        ofDrawLine(ctrl_point4.x, ctrl_point4.y, ctrl_point1.x, ctrl_point1.y);
+        ofDrawLine(ctrl_point5.x, ctrl_point5.y, ctrl_point6.x, ctrl_point6.y);
+        ofDrawLine(ctrl_point7.x, ctrl_point7.y, ctrl_point8.x, ctrl_point8.y);
+        ofDrawLine(ctrl_point6.x, ctrl_point6.y, ctrl_point7.x, ctrl_point7.y);
+        ofDrawLine(ctrl_point8.x, ctrl_point8.y, ctrl_point5.x, ctrl_point5.y);
+    }
 
-    // dessiner la courbe
+
+    // dessiner les deux courbes  
     ofSetColor(0, 255, 0);
-    ofSetLineWidth(line_width_curve);
     line_renderer.draw();
-    int espace = 30; 
-
-    // lignes horizontales
-    ofPushMatrix();
-
-    for (int i = 0; i < 20; i++) {
-        ofTranslate(initial_position1.x - 128, initial_position1.y - 612, initial_position1.z + espace);      
-        line_renderer.draw();       
-      
-        float z = initial_position1.z + espace;
-        positionZ.push_back(z);
-      
-        for (int i = 0; i < 150; i += 10) {
-           float x = line_renderer.getPointAtIndexInterpolated(i).x;
-           float y = line_renderer.getPointAtIndexInterpolated(i).y;
-          
-
-           positionX.push_back(x);
-           positionY.push_back(y);
-          
-           
-           ofDrawEllipse(x, y, 10, 10);
-        } 
-        
-         
-
-    }  
-
-    ofPopMatrix();
-
-   
-    
-    float a = positionX[4];
-    float b = positionY[4];
-    float c = positionZ[7];
-    ofSetColor(255, 255, 255);
-    ofDrawEllipse(a, b, c, 10, 10);
-
+    line_renderer_2.draw();
 
     // dessiner les points de contrôle
     ofSetColor(255, 0, 0);
     ofDrawEllipse(ctrl_point1.x, ctrl_point1.y, radius, radius);
     ofDrawEllipse(ctrl_point2.x, ctrl_point2.y, radius, radius);
     ofDrawEllipse(ctrl_point3.x, ctrl_point3.y, radius, radius);
-  
+    ofDrawEllipse(ctrl_point6.x, ctrl_point6.y, radius, radius);
+    ofDrawEllipse(ctrl_point7.x, ctrl_point7.y, radius, radius);
+    ofDrawEllipse(ctrl_point8.x, ctrl_point8.y, radius, radius);
+    if (noeud) ofDrawEllipse(ctrl_point4.x, ctrl_point4.y, radius, radius);
 
     cam.end();
+
+    // draw instruction de controle des points pour l'utilisateur 
+    ofSetColor(200);
+    string msg = "Utiliser les touches 1 a 6 pour choisir un point de controle\n"
+        "et les fleches pour les deplacer\nr : reset\nc : afficher les lignes de controle\n"
+        "n : afficher et controler le noeud";
+    ofDrawBitmapString(msg, 10, 20);
+    
 }
 
 void ofApp::reset() {
-
+   
     // initialisation des variables
     framebuffer_width = ofGetWidth();
     framebuffer_height = ofGetHeight();
@@ -173,17 +150,39 @@ void ofApp::reset() {
     initial_position4 = { w_3_4, h_1_3, 0 };
     initial_position5 = { w_7_8, h_4_5, 0 };
 
+    initial_position6 = { w_1_8, h_4_5, 0 };
+    initial_position7 = { w_1_4, h_1_3, 0 };
+    initial_position8 = { w_1_2, h_1_5, 0 };
+    initial_position9 = { w_3_4, h_1_3, 0 };
+    initial_position10 = { w_7_8, h_4_5, 0 };
+
+
+
+    // paramètres des points de controles 
     ctrl_point1 = initial_position1;
-    ctrl_point2 = initial_position3;
-    ctrl_point3 = initial_position5;
+    ctrl_point2 = initial_position2;
+    ctrl_point3 = initial_position4 - 300;
     ctrl_point4 = initial_position5;
-    
-    ctrl_point2.y = initial_position3.y + 450;
 
     selected_ctrl_point = &ctrl_point2;
 
+    ctrl_point5 = ctrl_point4;
+
+    ctrl_point6.x = ctrl_point2.x + 1000;
+    ctrl_point6.y = ctrl_point2.y + 770;
+    ctrl_point6.z = ctrl_point2.z;
+
+    ctrl_point7.x = ctrl_point3.x + 770;
+    ctrl_point7.y = ctrl_point3.y;
+    ctrl_point7.z = ctrl_point3.z;
+
+    ctrl_point8.x = ctrl_point4.x + 770;
+    ctrl_point8.y = ctrl_point4.y;
+    ctrl_point8.z = ctrl_point4.z;
+
     delta_x = motion_speed;
     delta_y = motion_speed;
+
 
     ofLog() << "<reset>";
 }
@@ -217,40 +216,44 @@ void ofApp::keyPressed(int key){
 void ofApp::keyReleased(int key){
     switch (key)
     {
-    case 48: // touche 0
-        ofLog() << "<0>";
-        break;
-
     case 49: // touche 1
         selected_ctrl_point = &ctrl_point1;
-        ofLog() << "<select control point 1>";
         break;
 
     case 50: // touche 2
-       selected_ctrl_point = &ctrl_point2;
-        ofLog() << "<select control point 2>";
+        selected_ctrl_point = &ctrl_point2;
         break;
 
     case 51: // touche 3
         selected_ctrl_point = &ctrl_point3;
-        ofLog() << "<select control point 3>";
         break;
 
     case 52: // touche 4
-        selected_ctrl_point = &ctrl_point4;
-        ofLog() << "<select control point 4>";
-        break;
+        selected_ctrl_point = &ctrl_point6;
 
+        break;
     case 53: // touche 5
-        ofLog() << "<select curve type : bezier quadratic>";
-       
-        reset();
+        selected_ctrl_point = &ctrl_point7;
         break;
 
     case 54: // touche 6
-        ofLog() << "<select curve type : bezier cubic>";
-       
-        reset();
+        selected_ctrl_point = &ctrl_point8;
+        break;
+
+    case 99: // touche c
+        if (!hide_control_line) hide_control_line = true;
+        else hide_control_line = false;
+        break;
+
+    case 110: // touche n
+        if (!noeud) {
+            noeud = true;
+            selected_ctrl_point = &ctrl_point4;
+        }
+        else {
+            noeud = false;
+            selected_ctrl_point = &ctrl_point2;
+        }
         break;
 
     case 114: // touche r
